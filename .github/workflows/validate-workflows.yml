@@ -1,0 +1,60 @@
+name: Validate Workflows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  actionlint:
+    name: Lint GitHub Actions Workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          echo "${PWD}" >> $GITHUB_PATH
+
+      - name: Run actionlint
+        run: actionlint -color
+
+  yaml-lint:
+    name: YAML Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Run yamllint
+        run: |
+          find . -name "*.yml" -o -name "*.yaml" | xargs yamllint -d relaxed
+
+  structure-check:
+    name: Validate Repository Structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for required files
+        run: |
+          echo "Checking repository structure..."
+          
+          # Check for workflows directory
+          if [ -d ".github/workflows" ]; then
+            echo "✅ .github/workflows directory exists"
+          else
+            echo "❌ .github/workflows directory missing"
+            exit 1
+          fi
+          
+          # List all workflow files
+          echo "Workflow files found:"
+          find .github/workflows -name "*.yml" -o -name "*.yaml"
